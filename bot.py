@@ -1,4 +1,4 @@
- import telebot
+import telebot
 import time
 import os
 import http.server
