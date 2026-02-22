@@ -1,4 +1,4 @@
-import telebot
+iimport telebot
 import time
 import os
 import http.server
@@ -15,7 +15,7 @@ def run_on_render():
 threading.Thread(target=run_on_render, daemon=True).start()
 
 # Bot kodingiz
-TOKEN = '8341594080:AAGK56QjnwpOGX6_oE7vP_l7_Lh_v8_l7_L'
+TOKEN = '8492024967:AAEJnp1Xl0W8DBOi70PhUwwx2o3zqWWu4CM'
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
