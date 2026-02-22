@@ -1,30 +1,41 @@
-import telebot
+ import telebot
 import time
+import os
+import http.server
+import socketserver
+import threading
 
-# @classic_mafia_bot tokeni
-TOKEN = '8341594080:AAGK56Qjnwp0GXNKIynnUBaoaVLc9xdU5JA'
+# Render uchun soxta port yaratish
+def run_on_render():
+    PORT = int(os.environ.get("PORT", 10000))
+    handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", PORT), handler) as httpd:
+        httpd.serve_forever()
+
+threading.Thread(target=run_on_render, daemon=True).start()
+
+# Bot kodingiz
+TOKEN = '8341594080:AAGK56QjnwpOGX6_oE7vP_l7_Lh_v8_l7_L'
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "🕴 Classic Mafia boti onlayn va xizmatga tayyor!")
+    bot.reply_to(message, "🎙 Classic Mafia botiga xush kelibsiz!")
 
-@bot.message_handler(func=lambda message: any(word in message.text.lower() for word in ['http', 't.me']))
+@bot.message_handler(func=lambda m: True)
 def delete_ads(message):
     try:
-        bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, "⚠️ Reklama o'chirildi!")
+        pass
     except:
         pass
 
-# Botni xatoliklardan himoya qilish (o'lmas bot)
 while True:
     try:
         print("Bot ishga tushdi...")
-        bot.polling(none_stop=True, interval=0, timeout=20)
+        bot.polling(none_stop=True)
     except Exception as e:
-        print(f"Xatolik: {e}. 5 soniyadan keyin qayta yonadi...")
         time.sleep(5)
+
 
 
 
