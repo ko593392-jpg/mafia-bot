@@ -1,4 +1,3 @@
-
 import telebot
 from telebot import types
 import threading
@@ -9,22 +8,20 @@ import random
 TOKEN = '8492024967:AAEJnp1Xl0W8DBOi70PhUwwx2o3zqWWu4CM'
 bot = telebot.TeleBot(TOKEN)
 
-# O'yin holati va o'yinchilar
+# O'yin ma'lumotlari
 players_in_game = [] 
+game_chat_id = None
 
-def get_profile(user_id, name="O'yinchi"):
-    # Foydalanuvchi ma'lumotlari (1847.jpg dizayni uchun xizmat qiladi)
-    return {'id': user_id, 'name': name}
-
-# --- 1. RO'YXATDAN O'TISHNI BOSHLASH (/game) ---
+# --- 1. O'YIN RO'YXATINI BOSHLASH (/game) ---
 @bot.message_handler(commands=['game'])
 def start_registration(message):
-    global players_in_game
+    global players_in_game, game_chat_id
     if message.chat.type == 'private':
         bot.send_message(message.chat.id, "O'yinni guruhda boshlang!")
         return
     
-    players_in_game = [] # Yangi o'yin uchun ro'yxatni tozalash
+    players_in_game = [] 
+    game_chat_id = message.chat.id
     
     text = (f"<b>classic mafia</b> 🥷      admin\n"
             f"<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
@@ -33,58 +30,41 @@ def start_registration(message):
     
     markup = types.InlineKeyboardMarkup()
     bot_username = bot.get_me().username
-    markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", url=f"https://t.me/{bot_username}?start=join_{message.chat.id}"))
+    markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", url=f"https://t.me/{bot_username}?start=join"))
     
     bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
 
-# --- 2. LICHKADA QO'SHILISH VA GURUHNI YANGILASH ---
+# --- 2. LICHKADA QO'SHILISH VA GURUHNI YANGILASH (/start) ---
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    global players_in_game
+    global players_in_game, game_chat_id
     
-    # Lichkada qo'shilishni tasdiqlash
-    if message.chat.type == 'private' and "join_" in message.text:
-        chat_id = message.text.split("_")[1]
+    # Lichkada o'yinga qo'shilish
+    if message.chat.type == 'private' and "join" in message.text:
         user_info = {'id': message.from_user.id, 'name': message.from_user.first_name}
         
         if not any(p['id'] == user_info['id'] for p in players_in_game):
             players_in_game.append(user_info)
             
+            # Guruhga qaytish tugmasi (1849.jpg dagi kabi)
             markup = types.InlineKeyboardMarkup()
-            # Guruhga qaytish tugmasi
-            markup.add(types.InlineKeyboardButton("⬅️ Guruhga qaytish", url=f"https://t.me/c/{(str(chat_id).replace('-100',''))}"))
+            markup.add(types.InlineKeyboardButton("⬅️ Guruhga qaytish", url="https://t.me/classic_mafia_news"))
             
-            bot.send_message(message.chat.id, "✅ <b>Siz o'yinga muvaffaqiyatli qo'shildingiz!</b>\nO'yin boshlanishini guruhda kuting.", 
+            bot.send_message(message.chat.id, "✅ <b>Siz o'yinga muvaffaqiyatli qo'shildingiz!</b>\n\nO'yin boshlanishini guruhda kiting.", 
                              parse_mode='HTML', reply_markup=markup)
             
-            # Guruhdagi ro'yxatni yangilash (1851.jpg dizayni)
-            names_list = ", ".join([f'<a href="tg://user?id={p["id"]}">{p["name"]}</a>' for p in players_in_game])
-            update_text = (f"<b>classic mafia</b> 🥷      admin\n"
-                           f"<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
-                           f"Ro'yxatdan o'tganlar:\n\n"
-                           f"{names_list}\n\n"
-                           f"Jami {len(players_in_game)}ta odam.")
-            
-            markup_join = types.InlineKeyboardMarkup()
-            markup_join.add(types.InlineKeyboardButton("🤵 Qo'shilish", url=f"https://t.me/{bot.get_me().username}?start=join_{chat_id}"))
-            
-            # Oxirgi xabarni tahrirlash o'rniga yangi xabar yuborsa ham bo'ladi, lekin tahrirlash tozirroq
-            try:
-                bot.send_message(chat_id, update_text, parse_mode='HTML', reply_markup=markup_join)
-            except:
-                pass
+            # Guruhdagi ro'yxatni yangilash (1851.jpg dagi kabi profil linki bilan)
+            if game_chat_id:
+                names_list = ", ".join([f'<a href="tg://user?id={p["id"]}">{p["name"]}</a>' for p in players_in_game])
+                update_text = (f"<b>classic mafia</b> 🥷      admin\n"
+                               f"<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
+                               f"Ro'yxatdan o'tganlar:\n\n"
+                               f"{names_list}\n\n"
+                               f"Jami {len(players_in_game)}ta odam.")
+                
+                markup_join = types.InlineKeyboardMarkup()
+                markup_join.add(types.InlineKeyboardButton("🤵 Qo'shilish", url=f"https://t.me/{bot.get_me().username}?start=join"))
+                bot.send_message(game_chat_id, update_text, parse_mode='HTML', reply_markup=markup_join)
         return
 
-    # Guruhda /start bosilganda o'yinni boshlash
-    if message.chat.type != 'private':
-        if len(players_in_game) >= 2: # Kamida 2 kishi bo'lsa
-            start_real_game(message.chat.id)
-        else:
-            bot.send_message(message.chat.id, "O'yinni boshlash uchun kamida 2 kishi ro'yxatdan o'tishi kerak!")
-
-# --- 3. O'YINNI BOSHLASH VA ROLLARNI TARQATISH ---
-def start_real_game(chat_id):
-    bot.send_message(chat_id, "<b>O'yin boshlandi! Rollar tarqatilmoqda...</b> 🌙", parse_mode='HTML')
-    
-    # Barcha rollar (1836.jpg va 1837.jpg asosida)
-    all_roles =
+    # Gur
