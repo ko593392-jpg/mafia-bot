@@ -1,4 +1,3 @@
-
 import telebot
 from telebot import types
 import threading
@@ -7,20 +6,20 @@ import os
 # --- SOZLAMALAR ---
 TOKEN = '8492024967:AAEJnp1Xl0W8DBOi70PhUwwx2o3zqWWu4CM'
 bot = telebot.TeleBot(TOKEN)
-ADMIN_ID = 6363297151
 
 user_data = {}
 
 def get_profile(user_id, name="O'yinchi"):
     if user_id not in user_data:
+        # Yangi foydalanuvchi bonusi: 1000 pul, 5 olmos
         user_data[user_id] = {
-            'id': user_id, 'name': name, 'money': 575, 'diamonds': 0,
+            'id': user_id, 'name': name, 'money': 1000, 'diamonds': 5,
             'himoya': 0, 'qotil_himoya': 0, 'ovoz_himoya': 0, 'miltiq': 0,
-            'maska': 0, 'soxta_hujjat': 0, 'wins': 78, 'games': 335
+            'maska': 0, 'soxta_hujjat': 0, 'wins': 0, 'games': 0
         }
     return user_data[user_id]
 
-# --- 1. PROFIL (1845.jpg DIZAYNI) ---
+# --- 1. PROFIL DIZAYNI (1847.jpg asosida) ---
 @bot.message_handler(commands=['me', 'profil'])
 def show_profile(message):
     u = get_profile(message.from_user.id, message.from_user.first_name)
@@ -54,44 +53,62 @@ def show_profile(message):
         types.InlineKeyboardButton("Xarid qilish 💎", url="https://t.me/muwahhid_27")
     )
     markup.add(types.InlineKeyboardButton("🎲 Premium guruhlar", url="https://t.me/muwahhid_27"))
-    markup.add(types.InlineKeyboardButton("Yangiliklar ↗️", url="https://t.me/muwahhid_27"))
+    markup.add(types.InlineKeyboardButton("Yangiliklar ↗️", url="https://t.me/classic_mafia_news"))
 
     bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
 
-# --- 2. START LOGIKASI (GURUH VS LICHKA) ---
+# --- 2. START VA RO'YXATDAN O'TISH (1849.jpg asosida) ---
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     if message.chat.type != 'private':
-        # Guruhda bo'lsa ro'yxatdan o'tish (1838.jpg)
-        text = "<b>Mafia Baku Black 2</b>      admin\n"
-        text += "<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
-        text += "Ro'yxatdan o'tganlar:\n\n"
-        text += f"<i>{message.from_user.first_name}</i>\n\n"
-        text += "Jami 1ta odam."
+        text = (f"<b>classic mafia</b> 🥷      admin\n"
+                f"<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
+                f"Ro'yxatdan o'tganlar:\n\n"
+                f"<i>{message.from_user.first_name}</i>\n\n"
+                f"Jami 1ta odam.")
         
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", callback_data="join"))
+        # Tugma bosilganda bot lichkasiga otadi
+        markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", url=f"https://t.me/{(bot.get_me()).username}?start=join"))
         bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
     else:
-        # Lichkada profil
+        if "join" in message.text:
+            bot.send_message(message.chat.id, "✅ <b>Siz o'yinga muvaffaqiyatli qo'shildingiz!</b>\nO'yin boshlanishini kuting.", parse_mode='HTML')
         show_profile(message)
 
-# --- 3. MENYU TUGMALARI ---
-def setup_bot_menu():
-    bot.set_my_commands([
-        types.BotCommand("/profil", "Profilingizni ko'rish"),
-        types.BotCommand("/rollar", "O'yin rollari"),
-        types.BotCommand("/qaydlar", "O'yin qoidalari"),
-        types.BotCommand("/top", "Reyting")
-    ])
+# --- 3. BARCHA ROLLAR TAVSIFI ---
+@bot.message_handler(commands=['rollar', 'rules'])
+def rules_handler(message):
+    roles_text = (
+        "<b>🎭 classic mafia - Barcha Rollar:</b>\n\n"
+        "🕵️‍♂️ <b>Sherif:</b> Kechasi tekshiradi yoki otadi.\n"
+        "👩‍⚕️ <b>Hamshira:</b> Bir marta o'zini qutqara oladi.\n"
+        "🕵️ <b>Detektiv:</b> Aloqalarni aniqlaydi.\n"
+        "👨‍⚕️ <b>Doktor:</b> O'yinchilarni davolaydi.\n"
+        "🤵 <b>Don:</b> Mafiyalar sardori.\n"
+        "🕵️‍♂️ <b>Komissar katani:</b> Rolni aniqlaydi.\n"
+        "💃 <b>Kezuvchi:</b> O'yinchini band qiladi.\n"
+        "🐺 <b>Bo'ri:</b> Yolg'iz qotil.\n"
+        "🕴️ <b>Mafia:</b> Guruh qotillari.\n"
+        "👱‍♂️ <b>Tinch axoli:</b> Oddiy fuqaro."
+    )
+    bot.send_message(message.chat.id, roles_text, parse_mode='HTML')
 
-# --- RENDER PORT BINDING ---
+# --- PORT VA RENDER FIX ---
 def dummy_server():
-    os.system("python3 -m http.server 10000")
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200); self.end_headers(); self.wfile.write(b"Bot ishlamoqda")
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(('', port), Handler).serve_forever()
 
 threading.Thread(target=dummy_server, daemon=True).start()
 
 if __name__ == "__main__":
-    setup_bot_menu()
+    bot.set_my_commands([
+        types.BotCommand("/profil", "Profil"),
+        types.BotCommand("/rollar", "Rollar"),
+        types.BotCommand("/top", "Reyting")
+    ])
     bot.infinity_polling()
-
