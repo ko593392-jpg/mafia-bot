@@ -1,13 +1,12 @@
-
-    
-    import telebot
+import telebot
 from telebot import types
 import threading
 import os
 
+# --- SOZLAMALAR ---
 TOKEN = '8492024967:AAEJnp1Xl0W8DBOi70PhUwwx2o3zqWWu4CM'
 bot = telebot.TeleBot(TOKEN)
-ADMIN_ID = 6363297151 # @muwahhid_27
+ADMIN_ID = 6363297151
 
 user_data = {}
 
@@ -20,17 +19,17 @@ def get_profile(user_id, name="O'yinchi"):
         }
     return user_data[user_id]
 
-# --- LEVEL VA LEGENDA (IXCHAM) ---
+# --- LEGENDA DARAJALARI ---
 def get_lvl_title(lvl):
     if lvl <= 10: return f"Sarbast [L:{lvl}]"
-    if lvl <= 25: return f"⚔️ Ritsar [L:{lvl}]"
-    if lvl <= 45: return f"🛡️ Gvardiya [L:{lvl}]"
-    if lvl <= 70: return f"⚡ Mif [L:{lvl}]"
-    if lvl <= 100: return f"🔱 Boqiy [L:{lvl}]"
-    if lvl <= 150: return f"👑 Hukmron [L:{lvl}]"
-    return f"🌌 Legenda [L:{lvl}]"
+    elif lvl <= 25: return f"⚔️ Ritsar [L:{lvl}]"
+    elif lvl <= 45: return f"🛡️ Gvardiya [L:{lvl}]"
+    elif lvl <= 70: return f"⚡ Mif [L:{lvl}]"
+    elif lvl <= 100: return f"🔱 Boqiy [L:{lvl}]"
+    elif lvl <= 150: return f"👑 Hukmron [L:{lvl}]"
+    else: return f"🌌 Legenda [L:{lvl}]"
 
-# --- 1. PROFIL VA ASOSIY MENYU ---
+# --- PROFIL VA LICHKA (PREMIUM & YANGILIKLAR) ---
 @bot.message_handler(commands=['start', 'profile', 'me'])
 def profile_handler(message):
     u_id = message.from_user.id
@@ -42,58 +41,51 @@ def profile_handler(message):
             f"📈 XP: {u['xp']}/{(u['lvl']*1000)}\n\n"
             f"💵 Dollar: {u['money']}\n"
             f"💎 Olmos: {u['diamonds']}\n\n"
-            f"🛡️ Himoya: {u['himoya']}\n"
-            f"⚖️ Ovoz himoyasi: {u['ovoz_himoya']}\n"
-            f"🎭 Maska: {u['maska']}\n"
-            f"📁 Soxta hujjat: {u['soxta_hujjat']}\n"
-            f"💣 Qasos: {u['tizimli_qasos']}\n"
-            f"⚡ Faol rol: {u['faol_rol']}")
+            f"🛡️ Himoya: {u['himoya']} | 🎭 Maska: {u['maska']}\n"
+            f"📁 Hujjat: {u['soxta_hujjat']} | 💣 Qasos: {u['tizimli_qasos']}")
 
     markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(types.InlineKeyboardButton("🛒 Do'kon", callback_data="open_shop"))
     markup.add(
         types.InlineKeyboardButton("💎 Premium Guruhlar", url="https://t.me/muwahhid_27"),
         types.InlineKeyboardButton("↗️ Yangiliklar", url="https://t.me/muwahhid_27")
     )
-    markup.add(
-        types.InlineKeyboardButton("Xarid qilish 💵", url="https://t.me/muwahhid_27"),
-        types.InlineKeyboardButton("Xarid qilish 💎", url="https://t.me/muwahhid_27")
-    )
+    markup.add(types.InlineKeyboardButton("🛒 Do'kon", callback_data="open_shop"))
     
-    # Agar lichkada bo'lsa shaxsiy xabar yuborish
     bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
 
-# --- 2. PUL O'TKAZISH (200 MIN, 10% SOLIQ) ---
+# --- PUL O'TKAZISH (10% SOLIQ) ---
 @bot.message_handler(commands=['ber'])
 def transfer_money(message):
     if not message.reply_to_message:
-        return bot.reply_to(message, "Pul berish uchun foydalanuvchi xabariga 'Reply' qiling!")
-    
+        return bot.reply_to(message, "Pul berish uchun 'Reply' qiling!")
     try:
         amount = int(message.text.split()[1])
         if amount < 200:
-            return bot.reply_to(message, "Minimal o'tkazma: 200 pul! ❌")
+            return bot.reply_to(message, "Minimal o'tkazma: 200! ❌")
         
         sender = get_profile(message.from_user.id, message.from_user.first_name)
         if sender['money'] < amount:
-            return bot.reply_to(message, "Mablag' yetarli emas! ❌")
+            return bot.reply_to(message, "Mablag' yetarli emas!")
 
         tax = (amount // 200) * 20
         net = amount - tax
         
-        receiver = get_profile(message.reply_to_message.from_user.id, message.reply_to_message.from_user.first_name)
+        receiver = get_profile(message.reply_to_message.from_user.id)
         admin = get_profile(ADMIN_ID)
         
         sender['money'] -= amount
         receiver['money'] += net
-        admin['money'] += tax # Komissiya @muwahhid_27 ga tushadi
+        admin['money'] += tax
         
-        bot.reply_to(message, f"✅ O'tkazildi: {net}\n🏦 Komissiya (@muwahhid_27): {tax}")
-    except:
+        bot.reply_to(message, f"✅ O'tkazildi: {net}\n🏦 Soliq (@muwahhid_27): {tax}")
+    except Exception:
         bot.reply_to(message, "Format: /ber 200")
 
-# --- 3. RO'YXATDAN O'TISH DIZAYNI (1838.jpg) ---
-def start_reg_design(chat_id, players):
+# --- O'YIN DIZAYNLARI (RASMLAR ASOSIDA) ---
+@bot.message_handler(commands=['reg'])
+def start_reg(message):
+    # Test uchun 1 ta o'yinchi bilan dizayn
+    players = [message.from_user.id]
     text = "<b>Mafia Baku Black 2</b>      admin\n"
     text += "<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
     text += "Ro'yxatdan o'tganlar:\n\n"
@@ -103,46 +95,23 @@ def start_reg_design(chat_id, players):
     
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", callback_data="join"))
-    bot.send_message(chat_id, text, parse_mode='HTML', reply_markup=markup)
-
-# --- 4. O'YIN TUGASHI VA 25 KISHILIK BONUS (1837.jpg) ---
-def game_end_report(chat_id, winners, others, top_3):
-    count = len(winners) + len(others)
-    text = "<b>O'yin tugadi!</b>\n\n<b>G'oliblar:</b>\n"
-    
-    for i, (p_id, role) in enumerate(winners, 1):
-        u = get_profile(p_id)
-        u['money'] += 500
-        u['xp'] += 50
-        bonus_d = ""
-        if count >= 25 and p_id in top_3:
-            u['diamonds'] += 1
-            bonus_d = " + 1 💎"
-        text += f"{i}. {u['name']} - {role}{bonus_d}\n"
-
-    text += "\n<b>Qolgan o'yinchilar:</b>\n"
-    for i, (p_id, role) in enumerate(others, len(winners)+1):
-        u = get_profile(p_id)
-        u['money'] += 100
-        u['xp'] += 10
-        text += f"{i}. {u['name']} - {role}\n"
-        
-    bot.send_message(chat_id, text, parse_mode='HTML')
+    bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
 
 # --- DO'KON ---
 @bot.callback_query_handler(func=lambda call: call.data == "open_shop")
-def shop(call):
+def shop_callback(call):
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
         types.InlineKeyboardButton("🛡️ Himoya (150 💵)", callback_data="buy_himoya"),
-        types.InlineKeyboardButton("🎭 Maska (150 💵)", callback_data="buy_maska"),
         types.InlineKeyboardButton("💣 Qasos (1 💎)", callback_data="buy_qasos")
     )
-    bot.edit_message_text("🛒 <b>DO'KON</b>\nSotib olishni tanlang:", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='HTML')
+    bot.edit_message_text("🛒 <b>DO'KON</b>", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='HTML')
 
-# --- RENDER DUMMY SERVER ---
-def dummy():
+# --- RENDER UCHUN SERVER ---
+def dummy_server():
     os.system("python3 -m http.server 10000")
-threading.Thread(target=dummy, daemon=True).start()
 
-bot.infinity_polling()
+threading.Thread(target=dummy_server, daemon=True).start()
+
+if __name__ == "__main__":
+    bot.infinity_polling()
