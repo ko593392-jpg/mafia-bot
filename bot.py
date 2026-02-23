@@ -41,6 +41,7 @@ def handle_audio(message):
     except Exception as e:
         bot.send_message(message.chat.id, "⚠️ Xatolik yuz berdi.")
 
+# Render uchun server
 def dummy_server():
     from http.server import HTTPServer, BaseHTTPRequestHandler
     class Handler(BaseHTTPRequestHandler):
@@ -52,4 +53,3 @@ def dummy_server():
 if __name__ == "__main__":
     threading.Thread(target=dummy_server, daemon=True).start()
     bot.infinity_polling()
-
