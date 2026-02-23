@@ -53,3 +53,4 @@ def dummy_server():
 if __name__ == "__main__":
     threading.Thread(target=dummy_server, daemon=True).start()
     bot.infinity_polling()
+
