@@ -1,8 +1,10 @@
+
 import telebot
 from telebot import types
 import threading
 import os
 
+# --- SOZLAMALAR ---
 TOKEN = '8492024967:AAEJnp1Xl0W8DBOi70PhUwwx2o3zqWWu4CM'
 bot = telebot.TeleBot(TOKEN)
 ADMIN_ID = 6363297151
@@ -14,11 +16,11 @@ def get_profile(user_id, name="O'yinchi"):
         user_data[user_id] = {
             'id': user_id, 'name': name, 'money': 575, 'diamonds': 0,
             'himoya': 0, 'qotil_himoya': 0, 'ovoz_himoya': 0, 'miltiq': 0,
-            'maska': 0, 'soxta_hujjat': 0, 'wins': 78, 'games': 335, 'xp': 0, 'lvl': 1
+            'maska': 0, 'soxta_hujjat': 0, 'wins': 78, 'games': 335
         }
     return user_data[user_id]
 
-# --- 1. PROFIL DIZAYNI (1845.jpg NUSXASI) ---
+# --- 1. PROFIL (1845.jpg DIZAYNI) ---
 @bot.message_handler(commands=['me', 'profil'])
 def show_profile(message):
     u = get_profile(message.from_user.id, message.from_user.first_name)
@@ -37,7 +39,6 @@ def show_profile(message):
             f"🎲 Всего игр: {u['games']}")
 
     markup = types.InlineKeyboardMarkup(row_width=3)
-    # ON/OFF tugmalari
     markup.add(
         types.InlineKeyboardButton("📁 - 🟢 ON", callback_data="none"),
         types.InlineKeyboardButton("🛡️ - 🟢 ON", callback_data="none"),
@@ -57,11 +58,11 @@ def show_profile(message):
 
     bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
 
-# --- 2. START BOSILSA GURUHDA O'YIN BOSHLANISHI ---
+# --- 2. START LOGIKASI (GURUH VS LICHKA) ---
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     if message.chat.type != 'private':
-        # Guruhda bo'lsa o'yinga qo'shilish xabari (1838.jpg dizayn)
+        # Guruhda bo'lsa ro'yxatdan o'tish (1838.jpg)
         text = "<b>Mafia Baku Black 2</b>      admin\n"
         text += "<b>Ro'yxatdan o'tish davom etmoqda</b>\n"
         text += "Ro'yxatdan o'tganlar:\n\n"
@@ -72,5 +73,25 @@ def start_handler(message):
         markup.add(types.InlineKeyboardButton("🤵 Qo'shilish", callback_data="join"))
         bot.send_message(message.chat.id, text, parse_mode='HTML', reply_markup=markup)
     else:
-        # Lichkada bo'lsa profil
+        # Lichkada profil
+        show_profile(message)
+
+# --- 3. MENYU TUGMALARI ---
+def setup_bot_menu():
+    bot.set_my_commands([
+        types.BotCommand("/profil", "Profilingizni ko'rish"),
+        types.BotCommand("/rollar", "O'yin rollari"),
+        types.BotCommand("/qaydlar", "O'yin qoidalari"),
+        types.BotCommand("/top", "Reyting")
+    ])
+
+# --- RENDER PORT BINDING ---
+def dummy_server():
+    os.system("python3 -m http.server 10000")
+
+threading.Thread(target=dummy_server, daemon=True).start()
+
+if __name__ == "__main__":
+    setup_bot_menu()
+    bot.infinity_polling()
 
