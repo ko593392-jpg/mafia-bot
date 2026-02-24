@@ -1,48 +1,80 @@
 import os
-import telebot
 import time
-from telebot import types
+import logging
+import telebot
+from telebot.types import InlineQuery, InlineQueryResultCachedAudio
 
+# =====================
 # 1. SOZLAMALAR
-TOKEN = os.environ.get('BOT_TOKEN')
-bot = telebot.TeleBot(TOKEN)
+# =====================
+TOKEN = os.environ.get("BOT_TOKEN")  # Railway / env orqali
+bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 
-# 409 Xatosi va Webhook'ni tozalash
+logging.basicConfig(level=logging.INFO)
+
+# =====================
+# 2. 409 CONFLICT OLDINI OLISH
+# =====================
 try:
-    bot.remove_webhook()
+    bot.remove_webhook(drop_pending_updates=True)
     time.sleep(1)
 except:
     pass
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(
-        message.chat.id, 
-        "Otabek aka, tizim eng barqaror holatga o'tkazildi! ✅\nPastdagi tugmani bosing va musiqangizni tanlang.",
-        reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).add("🔍 Musiqa qidirish")
+# =====================
+# 3. MUSIQA BAZASI (Telegram file_id)
+# =====================
+MUSIC_DB = [
+    {
+        "title": "Relax Music",
+        "artist": "AI Muzik",
+        "file_id": "CQACAgIAAxkBAAExampleFILEID1"
+    },
+    {
+        "title": "Night Vibes",
+        "artist": "AI Muzik",
+        "file_id": "CQACAgIAAxkBAAExampleFILEID2"
+    }
+]
+
+# =====================
+# 4. INLINE QUERY QIDIRUV
+# =====================
+@bot.inline_handler(func=lambda q: len(q.query) > 0)
+def inline_music(inline_query: InlineQuery):
+    results = []
+
+    for i, music in enumerate(MUSIC_DB):
+        caption = (
+            f"🎵 <b>{music['title']}</b>\n"
+            f"👤 {music['artist']}\n\n"
+            f"━━━━━━━━━━━━━━━\n"
+            f"✨ <i>@ai_muzik_bot</i>"
+        )
+
+        results.append(
+            InlineQueryResultCachedAudio(
+                id=str(i),
+                audio_file_id=music["file_id"],
+                caption=caption
+            )
+        )
+
+    bot.answer_inline_query(
+        inline_query.id,
+        results,
+        cache_time=5,
+        is_personal=True
     )
 
-@bot.message_handler(func=lambda m: True)
-def search_music(message):
-    query = message.text
-    if query == "🔍 Musiqa qidirish":
-        bot.send_message(message.chat.id, "Musiqa nomini yozing:")
-        return
-
-    # DIZAYN: Telegramning global bazasidan qidirish (Bloklanmaydi!)
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("🎵 Musiqani yuklash", switch_inline_query_current_chat=query))
-    
-    bot.send_message(
-        message.chat.id, 
-        f"🔍 **'{query}'** bo'yicha musiqalar topildi!\n\nPastdagi tugmani bosib, ro'yxatdan o'zingizga yoqqanini tanlang:",
-        reply_markup=markup,
-        parse_mode="Markdown"
-    )
-
+# =====================
+# 5. BOT O‘CHIB QOLMASLIGI UCHUN
+# =====================
 if __name__ == "__main__":
     while True:
         try:
-            bot.polling(none_stop=True, skip_pending=True, timeout=20)
+            logging.info("Bot polling ishga tushdi...")
+            bot.polling(none_stop=True)
         except Exception as e:
+            logging.error(e)
             time.sleep(5)
