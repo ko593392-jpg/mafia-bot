@@ -3,6 +3,7 @@ import telebot
 import requests
 from telebot import types
 
+# Tokenni yangilagan bo'lsangiz, uni Variables'ga qo'shishni unutmang
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -12,7 +13,7 @@ def welcome(message):
     markup.add(types.KeyboardButton("🔍 Musiqa qidirish"))
     bot.send_message(
         message.chat.id, 
-        f"Assalomu alaykum, {message.from_user.first_name}! \nMen orqali to'liq musiqalarni topishingiz mumkin.",
+        f"Xush kelibsiz! Musiqa nomini yozing, men uni to'liq formatda topib beraman.",
         reply_markup=markup
     )
 
@@ -20,33 +21,33 @@ def welcome(message):
 def search_music(message):
     query = message.text
     if query == "🔍 Musiqa qidirish":
-        bot.send_message(message.chat.id, "Qo'shiq nomini yoki ijrochini yozing:")
+        bot.send_message(message.chat.id, "Qo'shiq nomini yozing:")
         return
 
-    msg = bot.reply_to(message, "🔍 To'liq musiqa qidirilmoqda...")
+    msg = bot.reply_to(message, "🔍 Qidirilmoqda...")
     
     try:
-        # To'liq musiqa yuklash uchun barqaror API (YouTube asosi)
-        search_url = f"https://api.v-s.mobi/api/v1/search?q={query}"
-        response = requests.get(search_url).json()
+        # Barqaror musiqa qidiruv tizimi
+        search_url = f"https://chukkun-api.vercel.app/api/music?q={query}"
+        data = requests.get(search_url).json()
         
-        if response and 'items' in response:
-            track = response['items'][0]
-            video_id = track['id']
+        if data and 'results' in data:
+            track = data['results'][0]
+            audio_url = track['download']
             title = track['title']
-            # To'liq MP3 yuklash uchun havola
-            audio_url = f"https://api.v-s.mobi/api/v1/download?id={video_id}&type=audio"
+            artist = track['artist']
             
-            # --- TINGLA BOT DIZAYNI (Inline tugmalar) ---
-            markup = types.InlineKeyboardMarkup(row_width=2)
-            btn_share = types.InlineKeyboardButton("🚀 Ulashish", switch_inline_query=title)
-            btn_channel = types.InlineKeyboardButton("📢 Kanalimiz", url="https://t.me/sizning_kanalingiz")
-            markup.add(btn_share, btn_channel)
+            # --- TINGLA BOT DIZAYNI ---
+            markup = types.InlineKeyboardMarkup()
+            btn_share = types.InlineKeyboardButton("🚀 Ulashish", switch_inline_query=f"{artist} - {title}")
+            markup.add(btn_share)
             
             bot.send_audio(
                 message.chat.id, 
                 audio_url, 
-                caption=f"🎵 **{title}**\n\n✅ To'liq variant!\n📥 @sizning_botingiz",
+                caption=f"🎵 **{artist} - {title}**\n\n📥 @sizning_botingiz",
+                performer=artist,
+                title=title,
                 reply_markup=markup,
                 parse_mode="Markdown"
             )
@@ -55,7 +56,4 @@ def search_music(message):
             bot.edit_message_text("❌ Musiqa topilmadi.", message.chat.id, msg.message_id)
             
     except Exception as e:
-        bot.edit_message_text("❌ Yuklashda xato (Server band).", message.chat.id, msg.message_id)
-        print(f"Xato: {e}")
-
-bot.polling(none_stop=True)
+        bot.edit_message_text(f"❌ Xato: Qidiruv tizimi vaqtincha band.", message.chat.id, msg.message_id)
