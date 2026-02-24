@@ -10,8 +10,12 @@ bot = telebot.TeleBot(BOT_TOKEN)
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
     'noplaylist': True,
-    'quiet': True
+    'quiet': True,
+    'no_warnings': True,
+    'source_address': '0.0.0.0', # Bu qator ulanishni barqaror qiladi
+    'force_generic_extractor': False
 }
+
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
