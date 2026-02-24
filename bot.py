@@ -1,8 +1,14 @@
 import telebot
 from youtubesearchpython import VideosSearch
 import os
+from telebot import apihelper
 
+# Render'dan tokenni olamiz
 TOKEN = os.getenv('BOT_TOKEN')
+
+# Xatoni oldini olish uchun: Proxies'ni majburan bo'sh qilamiz
+apihelper.proxy = None
+
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
@@ -28,4 +34,7 @@ def search_music(message):
     except Exception as e:
         bot.reply_to(message, f"Xatolik: {e}")
 
-bot.polling(none_stop=True)
+# Bot doimiy ishlashi uchun
+if __name__ == "__main__":
+    print("Bot yurgizildi...")
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
