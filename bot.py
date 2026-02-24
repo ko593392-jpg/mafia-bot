@@ -2,25 +2,20 @@ import os
 import telebot
 import yt_dlp
 
-# 1. Tokenni Railway Variables'dan olamiz
+# 1. Tokenni olish
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 2. Yuklab olish sozlamalari
+# 2. FFmpeg talab qilmaydigan sozlamalar
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
-    'outtmpl': 'track.%(ext)s',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
     'noplaylist': True,
+    'quiet': True
 }
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "Assalomu alaykum! Qo'shiq nomini yozing, men darhol topib beraman.")
+    bot.reply_to(message, "Tayyorman! Qo'shiq nomini yozing, men darhol topib beraman.")
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
@@ -29,19 +24,24 @@ def search_music(message):
 
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
-            # YouTube va SoundCloud'dan qidiradi
-            info = ydl.extract_info(f"ytsearch:{query}", download=True)['entries'][0]
+            # Musiqani qidirish
+            info = ydl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
+            audio_url = info['url']
             title = info.get('title', 'Musiqa')
+            duration = info.get('duration', 0)
             
-        # Musiqani yuborish
-        with open('track.mp3', 'rb') as audio:
-            bot.send_audio(message.chat.id, audio, caption=f"✅ {title}")
-        
+        # Musiqani audio havola orqali yuborish
+        bot.send_audio(
+            message.chat.id, 
+            audio_url, 
+            caption=f"✅ {title}",
+            title=title,
+            duration=duration
+        )
         bot.delete_message(message.chat.id, msg.message_id)
-        os.remove('track.mp3')
 
     except Exception as e:
-        bot.edit_message_text(f"❌ Xato yuz berdi: Musiqa topilmadi yoki yuklab bo'lmadi.", message.chat.id, msg.message_id)
+        bot.edit_message_text(f"❌ Xato: Musiqa topilmadi.", message.chat.id, msg.message_id)
         print(f"Xato: {e}")
 
 bot.polling(none_stop=True)
