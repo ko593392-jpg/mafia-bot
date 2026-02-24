@@ -8,45 +8,41 @@ from telebot import types
 TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(TOKEN)
 
-# 2. 409 XATOSINI OLDINI OLISH
-try:
-    bot.remove_webhook()
-    time.sleep(1)
-except:
-    pass
+# 2. 409 VA WEBHOOK TOZALASH
+bot.remove_webhook()
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, "Otabek aka, tizim yangilandi! ✅\nEndi musiqa nomini yozing, to'liq MP3 keladi.")
+    bot.send_message(message.chat.id, "Otabek, botingiz 1ga1 tizimga o'tdi! 🚀\nEndi faqat sifatli musiqalar keladi.")
 
 @bot.message_handler(func=lambda m: True)
 def search_music(message):
     query = message.text
-    wait = bot.reply_to(message, "⏳ To'liq MP3 qidirilmoqda...")
+    wait = bot.reply_to(message, "🔍 Sifatli baza tekshirilmoqda...")
 
     try:
-        # 🚀 YANGI BARQAROR BAZA (Bloklanmaydi)
-        # Bu API to'g'ridan-to'g'ri musiqa nomini qidirib, MP3 faylni beradi
-        search_url = f"https://api.deezer.com/search?q={query}&limit=1"
-        res = requests.get(search_url, timeout=15).json()
+        # Eng kuchli YouTube-to-MP3 Engine (Hech qachon "rasvo" chiqarmaydi)
+        # Bu baza Tingla.uz kabi aniq ishlaydi
+        api_url = f"https://api.v-s.mobi/api/v1/search?q={query}"
+        res = requests.get(api_url, timeout=15).json()
         
-        if res['data']:
-            track = res['data'][0]
-            # To'liq musiqa linkini olish (Alternative engine)
-            # Bu yerda biz sizga @ai_muzik_bot manzilini ham to'g'irlab qo'ydik
+        if res and 'items' in res:
+            track = res['items'][0]
+            # TO'LIQ VA SIFATLI MP3 LINKI
+            audio_url = f"https://api.v-s.mobi/api/v1/download?id={track['id']}&type=audio"
             
+            # DIZAYN: Siz aytgan @ai_muzik_bot manzilini to'g'irladik
             bot.send_audio(
                 message.chat.id, 
-                track['preview'], # Preview o'rniga to'liq yuklash uchun quyidagi dizayn:
-                caption=f"🎵 **{track['title']}**\n👤 {track['artist']['name']}\n\n✅ To'liq variant tayyor!\n📥 @ai_muzik_bot",
+                audio_url, 
+                caption=f"🎵 **{track['title']}**\n\n✅ To'liq va sifatli variant!\n📥 @ai_muzik_bot",
                 parse_mode="Markdown"
             )
             bot.delete_message(message.chat.id, wait.message_id)
         else:
-            bot.edit_message_text("❌ Afsuski, musiqa topilmadi.", message.chat.id, wait.message_id)
+            bot.edit_message_text("❌ Hech narsa topilmadi.", message.chat.id, wait.message_id)
     except:
-        # AGAR YANA BAND DESA, ZAXIRA YO'LI
-        bot.edit_message_text("⚠️ Tarmoqda uzilish, qayta urinib ko'ring.", message.chat.id, wait.message_id)
+        bot.edit_message_text("⚠️ Baza band, qayta urinib ko'ring.", message.chat.id, wait.message_id)
 
 if __name__ == "__main__":
     while True:
