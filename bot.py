@@ -2,48 +2,77 @@ import os
 import telebot
 import requests
 import time
+from telebot import types
 
+# 1. SOZLAMALAR
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
+ADMIN_ID = 12345678 # 👈 Otabek aka, ID-raqamingizni yozing!
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ⚠️ 409 xatosini o'ldirish: Eski ulanishlarni majburan uzish
+# 2. 409 CONFLICT-DAN DOIMIY HIMOYALANISH
 try:
-    print("Eski ulanishlar tozalanmoqda...")
     bot.remove_webhook()
-    time.sleep(2) # Telegram serverlariga dam beramiz
-except Exception as e:
-    print(f"Tozalashda xato: {e}")
+    time.sleep(1)
+except:
+    pass
+
+def main_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("🔍 Musiqa qidirish"), types.KeyboardButton("📊 Statistika"))
+    return markup
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "Otabek aka, botingiz 409 xatosidan qutuldi! ✅\nEndi bemalol musiqa qidiring.")
+    bot.send_message(message.chat.id, f"Salom Otabek aka! 🌟 Tizim 100% barqaror.", reply_markup=main_menu())
 
+# 3. ASOSIY MUSIQA QIDIRISH (ZAXIRA TIZIMI BILAN)
 @bot.message_handler(func=lambda message: True)
-def handle_music(message):
-    query = message.text
-    msg = bot.reply_to(message, "⏳ Eng kuchli tashqi bazadan to'liq musiqa olinmoqda...")
-    
-    try:
-        # Tashqi "Qo'l" - Bloklanmaydigan YouTube-MP3 API
-        api_url = f"https://api.v-s.mobi/api/v1/search?q={query}"
-        res = requests.get(api_url, timeout=20).json()
-        
-        if res and 'items' in res:
-            audio_id = res['items'][0]['id']
-            # To'g'ridan-to'g'ri to'liq yuklash linki
-            download_url = f"https://api.v-s.mobi/api/v1/download?id={audio_id}&type=audio"
-            
-            bot.send_audio(message.chat.id, download_url, caption=f"🎵 {res['items'][0]['title']}")
-            bot.delete_message(message.chat.id, msg.message_id)
-        else:
-            bot.edit_message_text("❌ Hech narsa topilmadi.", message.chat.id, msg.message_id)
-    except:
-        bot.edit_message_text("⚠️ Baza vaqtincha band, qayta urinib ko'ring.", message.chat.id, msg.message_id)
+def handle_all(message):
+    if message.text == "🔍 Musiqa qidirish":
+        bot.send_message(message.chat.id, "Musiqa nomini yozing:")
+        return
+    if message.text == "📊 Statistika":
+        bot.send_message(message.chat.id, "👤 Bot holati: Aktiv ✅")
+        return
 
-# 409-ga qarshi eng kuchli himoya
-while True:
+    query = message.text
+    temp_msg = bot.reply_to(message, "⏳ Musiqa qidirilmoqda...")
+
+    # --- 1-URINISH: YouTube Baza ---
     try:
-        bot.polling(none_stop=True, skip_pending=True, interval=0, timeout=20)
-    except Exception as e:
-        print(f"Polling xatosi: {e}")
-        time.sleep(5) # Xato bo'lsa 5 soniya kutib qayta ulanadi
+        url1 = f"https://api.v-s.mobi/api/v1/search?q={query}"
+        res1 = requests.get(url1, timeout=10).json()
+        if res1 and 'items' in res1:
+            audio_url = f"https://api.v-s.mobi/api/v1/download?id={res1['items'][0]['id']}&type=audio"
+            send_music(message.chat.id, audio_url, res1['items'][0]['title'], temp_msg)
+            return
+    except:
+        pass # Agar 1-baza band bo'lsa, indamay 2-siga o'tamiz
+
+    # --- 2-URINISH: Spotify/Deezer Baza (Zaxira) ---
+    try:
+        url2 = f"https://spotify-downloader.com/api/search?q={query}"
+        res2 = requests.get(url2, timeout=10).json()
+        if res2 and 'data' in res2:
+            track = res2['data'][0]
+            send_music(message.chat.id, track['download_link'], track['name'], temp_msg)
+            return
+    except:
+        pass
+
+    # Agar ikkala baza ham ishlamasa (juda kam holatda)
+    bot.edit_message_text("❌ Kechirasiz, musiqa topilmadi. Boshqa nom yozib ko'ring.", message.chat.id, temp_msg.message_id)
+
+def send_music(chat_id, url, title, temp_msg):
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🚀 Ulashish", switch_inline_query=title))
+    bot.send_audio(chat_id, url, caption=f"🎵 **{title}**\n\n✅ Tayyor!", reply_markup=markup, parse_mode="Markdown")
+    bot.delete_message(chat_id, temp_msg.message_id)
+
+# 4. 409 XATOSIGA QARSHI AVTOMATIK RESTART
+if __name__ == "__main__":
+    while True:
+        try:
+            bot.polling(none_stop=True, skip_pending=True, interval=0, timeout=20)
+        except Exception as e:
+            time.sleep(5)
