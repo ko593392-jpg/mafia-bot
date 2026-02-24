@@ -1,72 +1,68 @@
-import os
+  import os
 import telebot
 import requests
 import time
 from telebot import types
 
 # 1. SOZLAMALAR
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 5621376916 # 👈 Otabek aka, ID-raqamingizni tekshiring
-bot = telebot.TeleBot(BOT_TOKEN)
+TOKEN = os.environ.get('BOT_TOKEN')
+bot = telebot.TeleBot(TOKEN)
+ADMIN_ID = 5621376916 # Otabek aka ID raqamingiz
 
-# 2. 409 CONFLICT-DAN QAT'IY HIMOYALANISH
+# 2. XATOLIKLARNI TOZALASH
 try:
     bot.remove_webhook()
     time.sleep(1)
 except:
     pass
 
-# Tugmalar dizayni
-def main_menu():
+# Dizayn tugmalari
+def main_buttons():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(types.KeyboardButton("🔍 Musiqa qidirish"), types.KeyboardButton("📊 Statistika"))
+    markup.add("🔍 Musiqa qidirish", "📊 Statistika")
     return markup
 
 @bot.message_handler(commands=['start'])
-def welcome(message):
-    bot.send_message(
-        message.chat.id, 
-        f"Assalomu alaykum, Otabek aka! ✨\nTayyorman, qo'shiq nomini yozing, men to'g'ridan-to'g'ri MP3 yuboraman.", 
-        reply_markup=main_menu()
-    )
+def start(message):
+    bot.send_message(message.chat.id, "Xush keldingiz Otabek aka! 🌟 Qo'shiq nomini yozing:", reply_markup=main_buttons())
 
-# 3. STATISTIKA (ADMIN PANEL)
-@bot.message_handler(func=lambda message: message.text == "📊 Statistika")
-def admin_stat(message):
-    bot.send_message(message.chat.id, "✅ Bot holati: Aktiv\n📡 Baza: Deezer Premium MP3")
+@bot.message_handler(func=lambda m: m.text == "📊 Statistika")
+def stats(message):
+    bot.send_message(message.chat.id, "✅ Tizim holati: Barqaror\n📡 Baza: Deezer MP3")
 
-# 4. ASOSIY QISMI: TO'G'RIDAN-TO'G'RI MP3 VA DIZAYN
-@bot.message_handler(func=lambda message: True)
-def handle_music(message):
+@bot.message_handler(func=lambda m: True)
+def search_music(message):
     if message.text == "🔍 Musiqa qidirish":
-        bot.send_message(message.chat.id, "Musiqa yoki ijrochi nomini yozing:")
+        bot.send_message(message.chat.id, "Qo'shiq nomini yozing:")
         return
 
     query = message.text
-    temp_msg = bot.reply_to(message, "🔍 Musiqa qidirilmoqda, kuting...")
+    wait = bot.reply_to(message, "⏳ MP3 tayyorlanmoqda...")
 
     try:
-        # Eng barqaror va tezkor MP3 baza
-        search_url = f"https://api.deezer.com/search?q={query}&limit=1"
-        res = requests.get(search_url).json()
-
+        # Eng tezkor va bloklanmaydigan MP3 baza
+        res = requests.get(f"https://api.deezer.com/search?q={query}&limit=1").json()
+        
         if res['data']:
             track = res['data'][0]
-            title = track['title']
-            artist = track['artist']['name']
-            audio_url = track['preview'] # To'g'ridan-to'g'ri MP3 fayl
-
-            # PROFESSIONAL DIZAYN (Inline tugma bilan)
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("🚀 Do'stlarga ulashish", switch_inline_query=title))
-            
+            # DIZAYN: To'g'ridan-to'g'ri MP3 fayl
             bot.send_audio(
                 message.chat.id, 
-                audio_url, 
-                caption=f"🎵 **{title}**\n👤 {artist}\n\n✅ To'liq va sifatli variant!\n📥 @ai_muzik_bot",
-                reply_markup=markup,
+                track['preview'], 
+                caption=f"🎵 **{track['title']}**\n👤 {track['artist']['name']}\n\n📥 @ai_muzik_bot",
                 parse_mode="Markdown"
             )
-            bot.delete_message(message.chat.id, temp_msg.message_id)
+            bot.delete_message(message.chat.id, wait.message_id)
         else:
-            bot.edit_message_text("❌ Afsuski, hech narsa topilmadi.", message.chat.id, temp_msg.message_
+            bot.edit_message_text("❌ Topilmadi.", message.chat.id, wait.message_id)
+    except:
+        bot.edit_message_text("⚠️ Tarmoq biroz band, qayta urinib ko'ring.", message.chat.id, wait.message_id)
+
+# 3. 409 VA CRASHED-DAN HIMOYALANGAN POLLING
+if __name__ == "__main__":
+    while True:
+        try:
+            bot.polling(none_stop=True, skip_pending=True, timeout=20)
+        except:
+            time.sleep(5)
+              
