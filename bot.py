@@ -1,40 +1,47 @@
-import os
 import telebot
 import time
 from deep_translator import GoogleTranslator
-from urllib.parse import quote  # Linkni xavfsiz qilish uchun
+from urllib.parse import quote
 
-TOKEN = os.environ.get('BOT_TOKEN')
+# Sizning tokeningiz
+TOKEN = '8375712759:AAEs2gGVWsLBz4Pv2mVnzLErMXX87pqVTiE'
 bot = telebot.TeleBot(TOKEN)
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "Salom! Men rasm chizuvchi botman. 🎨\nO'zbekcha yozsangiz ham bo'ladi, men tushunaman!")
 
 @bot.message_handler(func=lambda m: True)
 def generate_art(message):
     try:
-        # 1. Progress bar (Siz aytgan yashil kvadratchalar) 🟩
-        progress_msg = bot.send_message(message.chat.id, "⌛ Boshladim... 0% [⬜⬜⬜⬜⬜]")
+        # 1. Jarayon boshlanishi
+        progress = bot.send_message(message.chat.id, "⌛ Boshladim... 0% [⬜⬜⬜⬜⬜]")
         
-        # 2. Avtomatik tarjima
+        # 2. O'zbekchadan inglizchaga tarjima
         translated = GoogleTranslator(source='auto', target='en').translate(message.text)
+        safe_query = quote(translated) # Linkni xavfsiz qilish
         
-        # 3. Linkni AI tushunadigan formatga keltirish (MUHIM!)
-        # Bu qator so'zlarni linkka xavfsiz joylaydi
-        safe_query = quote(translated)
+        # 3. Progress bar animatsiyasi 🟩
+        steps = [
+            ("🧠 G'oya o'ylanmoqda... 40%", "[🟩🟩⬜⬜⬜]"),
+            ("🎨 Rang berilmoqda... 80%", "[🟩🟩🟩🟩⬜]"),
+            ("✅ Tayyor! 100%", "[🟩🟩🟩🟩🟩]")
+        ]
         
-        # Progress bar animatsiyasi
-        steps = ["40% [🟩🟩⬜⬜⬜]", "80% [🟩🟩🟩🟩⬜]", "100% [🟩🟩🟩🟩🟩]"]
-        for step in steps:
-            time.sleep(0.5)
-            bot.edit_message_text(f"🎨 Chizilmoqda... {step}", message.chat.id, progress_msg.message_id)
+        for text, bar in steps:
+            time.sleep(0.6)
+            bot.edit_message_text(f"{text}\n{bar}", message.chat.id, progress.message_id)
 
-        # 4. Rasm manzili (Har safar yangi rasm chiqishi uchun seed qo'shildi)
+        # 4. Rasm yaratish linki (Har safar yangi rasm chiqishi uchun seed qo'shildi)
         seed = int(time.time())
         image_url = f"https://pollinations.ai/p/{safe_query}?width=1024&height=1024&seed={seed}"
         
-        # 5. Rasmni yuborish
-        bot.send_photo(message.chat.id, image_url, caption=f"✅ Natija: {message.text}\n✨ AI tushundi: {translated}")
-        bot.delete_message(message.chat.id, progress_msg.message_id)
+        # 5. Natijani yuborish
+        bot.send_photo(message.chat.id, image_url, caption=f"🖼 Natija: {message.text}\n\n✨ AI tushundi: {translated}")
+        bot.delete_message(message.chat.id, progress.message_id)
         
     except Exception as e:
         bot.send_message(message.chat.id, "Xatolik! Qayta urinib ko'ring.")
 
+# Botni ishga tushirish
 bot.polling(none_stop=True)
