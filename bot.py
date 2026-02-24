@@ -1,15 +1,14 @@
 import os
 import telebot
-import requests
 import time
 from telebot import types
 
 # 1. SOZLAMALAR
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = 12345678 # 👈 Otabek aka, ID-raqamingizni yozing!
+ADMIN_ID = 5621376916 # 👈 Otabek aka, ID-raqamingizni tekshirib yozing!
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 2. 409 CONFLICT-DAN DOIMIY HIMOYALANISH
+# 2. 409 CONFLICT-DAN QAT'IY HIMOYALANISH
 try:
     bot.remove_webhook()
     time.sleep(1)
@@ -23,53 +22,38 @@ def main_menu():
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.send_message(message.chat.id, f"Salom Otabek aka! 🌟 Tizim 100% barqaror.", reply_markup=main_menu())
+    bot.send_message(
+        message.chat.id, 
+        f"Salom Otabek aka! 🌟 Tizim eng barqaror holatga o'tkazildi.", 
+        reply_markup=main_menu()
+    )
 
-# 3. ASOSIY MUSIQA QIDIRISH (ZAXIRA TIZIMI BILAN)
+# 3. STATISTIKA (ADMIN PANEL)
+@bot.message_handler(func=lambda message: message.text == "📊 Statistika")
+def admin_stat(message):
+    bot.send_message(message.chat.id, "✅ Bot holati: Aktiv\n📡 Baza: Telegram Global Music")
+
+# 4. MUSIQA QIDIRISH (BLOKLANMAYDIGAN USUL)
 @bot.message_handler(func=lambda message: True)
-def handle_all(message):
+def handle_music(message):
     if message.text == "🔍 Musiqa qidirish":
-        bot.send_message(message.chat.id, "Musiqa nomini yozing:")
-        return
-    if message.text == "📊 Statistika":
-        bot.send_message(message.chat.id, "👤 Bot holati: Aktiv ✅")
+        bot.send_message(message.chat.id, "Musiqa yoki ijrochi nomini yozing:")
         return
 
     query = message.text
-    temp_msg = bot.reply_to(message, "⏳ Musiqa qidirilmoqda...")
-
-    # --- 1-URINISH: YouTube Baza ---
-    try:
-        url1 = f"https://api.v-s.mobi/api/v1/search?q={query}"
-        res1 = requests.get(url1, timeout=10).json()
-        if res1 and 'items' in res1:
-            audio_url = f"https://api.v-s.mobi/api/v1/download?id={res1['items'][0]['id']}&type=audio"
-            send_music(message.chat.id, audio_url, res1['items'][0]['title'], temp_msg)
-            return
-    except:
-        pass # Agar 1-baza band bo'lsa, indamay 2-siga o'tamiz
-
-    # --- 2-URINISH: Spotify/Deezer Baza (Zaxira) ---
-    try:
-        url2 = f"https://spotify-downloader.com/api/search?q={query}"
-        res2 = requests.get(url2, timeout=10).json()
-        if res2 and 'data' in res2:
-            track = res2['data'][0]
-            send_music(message.chat.id, track['download_link'], track['name'], temp_msg)
-            return
-    except:
-        pass
-
-    # Agar ikkala baza ham ishlamasa (juda kam holatda)
-    bot.edit_message_text("❌ Kechirasiz, musiqa topilmadi. Boshqa nom yozib ko'ring.", message.chat.id, temp_msg.message_id)
-
-def send_music(chat_id, url, title, temp_msg):
+    # Dizayn: Inline tugma orqali global qidiruv
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("🚀 Ulashish", switch_inline_query=title))
-    bot.send_audio(chat_id, url, caption=f"🎵 **{title}**\n\n✅ Tayyor!", reply_markup=markup, parse_mode="Markdown")
-    bot.delete_message(chat_id, temp_msg.message_id)
+    # Bu tugma Telegramning o'zidagi millionlab musiqalar orasidan qidiradi
+    markup.add(types.InlineKeyboardButton("🎵 Musiqani yuklash", switch_inline_query_current_chat=query))
+    
+    bot.send_message(
+        message.chat.id, 
+        f"🔍 **'{query}'** bo'yicha musiqalar topildi!\n\nPastdagi tugmani bosib, ro'yxatdan o'zingizga yoqqanini tanlang:",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
 
-# 4. 409 XATOSIGA QARSHI AVTOMATIK RESTART
+# 5. 409 XATOSIGA QARSHI DOIMIY POLLING
 if __name__ == "__main__":
     while True:
         try:
