@@ -2,5 +2,6 @@ pyTelegramBotAPI
 shazamio
 aiohttp
 yt-dlp
-Youtube-python
+youtube-search-python
+
 
