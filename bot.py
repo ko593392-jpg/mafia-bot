@@ -3,10 +3,10 @@ from youtubesearchpython import VideosSearch
 import os
 from telebot import apihelper
 
-# Render'dan tokenni olamiz
+# Tokenni Render'dan olamiz
 TOKEN = os.getenv('BOT_TOKEN')
 
-# MUHIM: Xatoga sabab bo'layotgan proxies funksiyasini butunlay o'chiramiz
+# Proxies muammosini uzil-kesil yopamiz
 apihelper.proxy = None
 
 bot = telebot.TeleBot(TOKEN)
@@ -17,25 +17,27 @@ def start(message):
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
+    query = message.text
+    print(f"Qidirilmoqda: {query}") # Render logida ko'rinadi
+    
     try:
-        query = message.text
-        search = VideosSearch(query, limit=5)
-        results = search.result()['result']
+        # Qidiruv qismini xavfsizroq qilamiz
+        search = VideosSearch(query, limit=1)
+        result = search.result()
         
-        if not results:
+        if result and len(result.get('result', [])) > 0:
+            video = result['result'][0]
+            title = video.get('title', 'Nomsiz')
+            link = video.get('link', '')
+            bot.send_message(message.chat.id, f"🎵 Topildi: {title}\n🔗 {link}")
+        else:
             bot.reply_to(message, "Hech narsa topilmadi.")
-            return
-
-        text = "🎵 Topilgan natijalar:\n\n"
-        for i, res in enumerate(results):
-            text += f"{i+1}. {res['title']} ({res['duration']})\n"
-        
-        bot.send_message(message.chat.id, text)
+            
     except Exception as e:
-        # Xatolikni ko'rish uchun
-        print(f"Xatolik: {e}")
-        bot.reply_to(message, "Kichik texnik xatolik, qaytadan urinib ko'ring.")
+        # Xatolikni aniq nimaligini logga chiqaramiz
+        print(f"XATO YUZ BERDI: {str(e)}")
+        bot.reply_to(message, f"Xatolik: {str(e)[:50]}... Qaytadan urinib ko'ring.")
 
 if __name__ == "__main__":
-    print("Bot muvaffaqiyatli yurgizildi...")
-    bot.infinity_polling(timeout=20, long_polling_timeout=10)
+    print("Bot muvaffaqiyatli ishga tushdi...")
+    bot.infinity_polling(timeout=20)
