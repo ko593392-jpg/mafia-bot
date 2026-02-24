@@ -1,56 +1,71 @@
 import telebot
-from shazamio import Shazam
-import asyncio
+from telebot import types
+from youtube_search import YoutubeSearch
+import yt_dlp
 import os
-import threading
 
-# --- SOZLAMALAR ---
-TOKEN = '8579253675:AAEqmEJVXKnbsFeIC_Ue7LYegcn9huKtJMk'
+# Sening bot tokening joylandi
+TOKEN = "8579253675:AAEqmEJVXKnbsFeIC_Ue7LYegcn9huKtJMk"
 bot = telebot.TeleBot(TOKEN)
-shazam = Shazam()
 
-@bot.message_handler(commands=['start'])
-def welcome(message):
-    bot.reply_to(message, "Assalomu alaykum! Menga musiqa yoki ovozli xabar yuboring, men uni topib beraman. 🎵")
+# Musiqa qidirish va ro'yxat chiqarish
+@bot.message_handler(content_types=['text'])
+def search_music(message):
+    if message.text.startswith('http'):
+        bot.send_message(message.chat.id, "Ssilkani tekshirib yuklayapman, ozgina sabr...")
+        download_and_send(message.chat.id, message.text)
+    else:
+        query = message.text
+        # YouTube'dan 10 ta natijani qidirish
+        results = YoutubeSearch(query, max_results=10).to_dict()
+        
+        if not results:
+            bot.send_message(message.chat.id, "❌ Afsuski, hech narsa topilmadi.")
+            return
 
-@bot.message_handler(content_types=['voice', 'audio'])
-def handle_audio(message):
-    bot.reply_to(message, "🔍 Musiqani qidiryapman, ozgina sabr...")
+        text = "🔍 Topilgan natijalar:\n\n"
+        markup = types.InlineKeyboardMarkup(row_width=5)
+        btns = []
+        
+        for i, res in enumerate(results, 1):
+            text += f"{i}. {res['title']} | {res['duration']}\n"
+            # Tanlash tugmalarini yaratish
+            btns.append(types.InlineKeyboardButton(text=str(i), callback_data=f"vid:{res['id']}"))
+        
+        markup.add(*btns)
+        bot.send_message(message.chat.id, text, reply_markup=markup)
+
+# Tugma bosilganda musiqani yuklab yuborish mantiqi
+@bot.callback_query_handler(func=lambda call: call.data.startswith('vid:'))
+def callback_download(call):
+    video_id = call.data.split(':')[1]
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    bot.answer_callback_query(call.id, "Musiqa yuklanyapti...")
+    download_and_send(call.message.chat.id, url)
+
+def download_and_send(chat_id, url):
+    # Yuklash sozlamalari (Audio formatda)
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'music.%(ext)s',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
     
     try:
-        file_id = message.voice.file_id if message.voice else message.audio.file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
         
-        file_name = f"music_{message.chat.id}.ogg"
-        with open(file_name, 'wb') as f:
-            f.write(downloaded_file)
-
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(shazam.recognize_song(file_name))
+        # Faylni foydalanuvchiga yuborish
+        with open('music.mp3', 'rb') as audio:
+            bot.send_audio(chat_id, audio)
         
-        if result.get('track'):
-            track = result['track']
-            bot.send_message(message.chat.id, f"✅ <b>Topildi!</b>\n\n🎵 Nomi: <b>{track.get('title')}</b>\n👤 Ijrochi: <b>{track.get('subtitle')}</b>", parse_mode='HTML')
-        else:
-            bot.send_message(message.chat.id, "❌ Afsuski, topilmadi.")
-        
-        if os.path.exists(file_name):
-            os.remove(file_name)
+        # Serverda joy egallamasligi uchun o'chirib tashlash
+        os.remove('music.mp3')
     except Exception as e:
-        bot.send_message(message.chat.id, "⚠️ Xatolik yuz berdi.")
+        bot.send_message(chat_id, f"Xato yuz berdi: {e}")
 
-# Render uchun server
-def dummy_server():
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200); self.end_headers(); self.wfile.write(b"Live")
-    port = int(os.environ.get("PORT", 10000))
-    HTTPServer(('', port), Handler).serve_forever()
-
-if __name__ == "__main__":
-    threading.Thread(target=dummy_server, daemon=True).start()
-    bot.infinity_polling()
-
+bot.polling(none_stop=True)
