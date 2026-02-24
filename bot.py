@@ -44,4 +44,4 @@ def generate_art(message):
         bot.send_message(message.chat.id, "Xatolik! Qayta urinib ko'ring.")
 
 # Botni ishga tushirish
-bot.polling(none_stop=True)
+
