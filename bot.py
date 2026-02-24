@@ -1,32 +1,51 @@
-import telebot
-from sclib import SoundcloudAPI, Track
 import os
-from telebot import apihelper
+import sys
 
-TOKEN = os.getenv('BOT_TOKEN')
-apihelper.proxy = None
-bot = telebot.TeleBot(TOKEN)
+# 1. Render kutubxonalarni o'rnatmasa, ularni majburan o'rnatish
+try:
+    from sclib import SoundcloudAPI, Track
+    import telebot
+except ImportError:
+    print("Kutubxonalar topilmadi. O'rnatish boshlanmoqda...")
+    os.system("pip install pyTelegramBotAPI sclib")
+    # O'rnatilgandan keyin qayta import qilish
+    from sclib import SoundcloudAPI, Track
+    import telebot
+
+# 2. Tokenni olish (Render Environment Variables'dan)
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+bot = telebot.TeleBot(BOT_TOKEN)
 api = SoundcloudAPI()
 
 @bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "Salom! Men ishlayapman! Qo'shiq nomini yozing (SoundCloud orqali).")
+def welcome(message):
+    bot.reply_to(message, "Assalomu alaykum! SoundCloud'dan musiqa qidirish uchun nomini yozing.")
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
+    query = message.text
     try:
-        # SoundCloud'dan qidiramiz
-        tracks = api.search(message.text)
+        msg = bot.reply_to(message, "Qidirilmoqda... 🔎")
+        tracks = api.search_tracks(query)
+        
         if tracks:
-            track = tracks[0] # Eng birinchi chiqqan natija
-            title = getattr(track, 'title', 'Nomsiz')
-            url = getattr(track, 'permalink_url', '')
-            bot.send_message(message.chat.id, f"🎵 Topildi: {title}\n🔗 {url}")
+            track = tracks[0]
+            with open('track.mp3', 'wb+') as fp:
+                track.write_to(fp)
+            
+            with open('track.mp3', 'rb') as audio:
+                bot.send_audio(message.chat.id, audio, title=track.title, performer=track.artist)
+            
+            bot.delete_message(message.chat.id, msg.message_id)
+            os.remove('track.mp3')
         else:
-            bot.reply_to(message, "Hech narsa topilmadi.")
+            bot.edit_message_text("Hech narsa topilmadi 😕", message.chat.id, msg.message_id)
+            
     except Exception as e:
-        print(f"Xato: {e}")
-        bot.reply_to(message, "Hozircha faqat link bera olaman. Iltimos, qaytadan urinib ko'ring.")
+        print(f"Xato yuz berdi: {e}")
+        bot.send_message(message.chat.id, "Kichik texnik xatolik yuz berdi.")
 
+# 3. Botni ishga tushirish
 if __name__ == "__main__":
+    print("Bot muvaffaqiyatli ishga tushdi...")
     bot.infinity_polling()
