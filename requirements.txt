@@ -1,6 +1,5 @@
 pyTelegramBotAPI
-requests
-deep-translator
+
 
 
 
