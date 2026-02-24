@@ -1,51 +1,47 @@
 import os
-import sys
+import telebot
+import yt_dlp
 
-# 1. Render kutubxonalarni o'rnatmasa, ularni majburan o'rnatish
-try:
-    from sclib import SoundcloudAPI, Track
-    import telebot
-except ImportError:
-    print("Kutubxonalar topilmadi. O'rnatish boshlanmoqda...")
-    os.system("pip install pyTelegramBotAPI sclib")
-    # O'rnatilgandan keyin qayta import qilish
-    from sclib import SoundcloudAPI, Track
-    import telebot
-
-# 2. Tokenni olish (Render Environment Variables'dan)
+# 1. Tokenni Railway Variables'dan olamiz
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
-api = SoundcloudAPI()
+
+# 2. Yuklab olish sozlamalari
+YDL_OPTIONS = {
+    'format': 'bestaudio/best',
+    'outtmpl': 'track.%(ext)s',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'noplaylist': True,
+}
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "Assalomu alaykum! SoundCloud'dan musiqa qidirish uchun nomini yozing.")
+    bot.reply_to(message, "Assalomu alaykum! Qo'shiq nomini yozing, men darhol topib beraman.")
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
     query = message.text
-    try:
-        msg = bot.reply_to(message, "Qidirilmoqda... 🔎")
-        tracks = api.search(query)
-        
-        if tracks:
-            track = tracks[0]
-            with open('track.mp3', 'wb+') as fp:
-                track.write_to(fp)
-            
-            with open('track.mp3', 'rb') as audio:
-                bot.send_audio(message.chat.id, audio, title=track.title, performer=track.artist)
-            
-            bot.delete_message(message.chat.id, msg.message_id)
-            os.remove('track.mp3')
-        else:
-            bot.edit_message_text("Hech narsa topilmadi 😕", message.chat.id, msg.message_id)
-            
-    except Exception as e:
-        print(f"Xato yuz berdi: {e}")
-        bot.send_message(message.chat.id, "Kichik texnik xatolik yuz berdi.")
+    msg = bot.reply_to(message, "🔍 Qidirilmoqda...")
 
-# 3. Botni ishga tushirish
-if __name__ == "__main__":
-    print("Bot muvaffaqiyatli ishga tushdi...")
-    bot.infinity_polling()
+    try:
+        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+            # YouTube va SoundCloud'dan qidiradi
+            info = ydl.extract_info(f"ytsearch:{query}", download=True)['entries'][0]
+            title = info.get('title', 'Musiqa')
+            
+        # Musiqani yuborish
+        with open('track.mp3', 'rb') as audio:
+            bot.send_audio(message.chat.id, audio, caption=f"✅ {title}")
+        
+        bot.delete_message(message.chat.id, msg.message_id)
+        os.remove('track.mp3')
+
+    except Exception as e:
+        bot.edit_message_text(f"❌ Xato yuz berdi: Musiqa topilmadi yoki yuklab bo'lmadi.", message.chat.id, msg.message_id)
+        print(f"Xato: {e}")
+
+bot.polling(none_stop=True)
