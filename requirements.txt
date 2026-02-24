@@ -1,7 +1,2 @@
 pyTelegramBotAPI
-shazamio
-aiohttp
-yt-dlp
-youtube-search-python
-
-
+sclib
