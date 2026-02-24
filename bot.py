@@ -6,14 +6,14 @@ from telebot import apihelper
 # Render'dan tokenni olamiz
 TOKEN = os.getenv('BOT_TOKEN')
 
-# Xatoni oldini olish uchun: Proxies'ni majburan bo'sh qilamiz
+# MUHIM: Xatoga sabab bo'layotgan proxies funksiyasini butunlay o'chiramiz
 apihelper.proxy = None
 
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Salom! Qo'shiq nomini yozing.")
+    bot.reply_to(message, "Salom! Men tayyorman. Qo'shiq nomini yozing!")
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
@@ -32,9 +32,10 @@ def search_music(message):
         
         bot.send_message(message.chat.id, text)
     except Exception as e:
-        bot.reply_to(message, f"Xatolik: {e}")
+        # Xatolikni ko'rish uchun
+        print(f"Xatolik: {e}")
+        bot.reply_to(message, "Kichik texnik xatolik, qaytadan urinib ko'ring.")
 
-# Bot doimiy ishlashi uchun
 if __name__ == "__main__":
-    print("Bot yurgizildi...")
-    bot.infinity_polling(timeout=10, long_polling_timeout=5)
+    print("Bot muvaffaqiyatli yurgizildi...")
+    bot.infinity_polling(timeout=20, long_polling_timeout=10)
