@@ -1,51 +1,43 @@
 import os
 import telebot
-import yt_dlp
+import requests
 
-# 1. Tokenni olish
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# 2. FFmpeg talab qilmaydigan sozlamalar
-YDL_OPTIONS = {
-    'format': 'bestaudio/best',
-    'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
-    'source_address': '0.0.0.0', # Bu qator ulanishni barqaror qiladi
-    'force_generic_extractor': False
-}
-
-
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "Tayyorman! Qo'shiq nomini yozing, men darhol topib beraman.")
+    bot.reply_to(message, "Assalomu alaykum! Musiqa nomini yozing, men bazadan qidirib beraman.")
 
 @bot.message_handler(func=lambda message: True)
 def search_music(message):
     query = message.text
-    msg = bot.reply_to(message, "🔍 Qidirilmoqda...")
-
+    msg = bot.reply_to(message, "🔍 Bazadan qidirilmoqda...")
+    
+    # Deezer va boshqa ochiq bazalardan qidirish (Bloklanmaydi)
     try:
-        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
-            # Musiqani qidirish
-            info = ydl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
-            audio_url = info['url']
-            title = info.get('title', 'Musiqa')
-            duration = info.get('duration', 0)
+        search_url = f"https://api.deezer.com/search?q={query}&limit=1"
+        response = requests.get(search_url).json()
+        
+        if response['data']:
+            track = response['data'][0]
+            audio_url = track['preview'] # Musiqa namunasi (preview)
+            title = track['title']
+            artist = track['artist']['name']
             
-        # Musiqani audio havola orqali yuborish
-        bot.send_audio(
-            message.chat.id, 
-            audio_url, 
-            caption=f"✅ {title}",
-            title=title,
-            duration=duration
-        )
-        bot.delete_message(message.chat.id, msg.message_id)
-
+            bot.send_audio(
+                message.chat.id, 
+                audio_url, 
+                caption=f"✅ {artist} - {title}\n\n@sizning_botingiz",
+                title=title,
+                performer=artist
+            )
+            bot.delete_message(message.chat.id, msg.message_id)
+        else:
+            bot.edit_message_text("❌ Afsuski, musiqa topilmadi.", message.chat.id, msg.message_id)
+            
     except Exception as e:
-        bot.edit_message_text(f"❌ Xato: Musiqa topilmadi.", message.chat.id, msg.message_id)
+        bot.edit_message_text(f"❌ Xato yuz berdi.", message.chat.id, msg.message_id)
         print(f"Xato: {e}")
 
 bot.polling(none_stop=True)
