@@ -26,7 +26,7 @@ def search_music(message):
     query = message.text
     try:
         msg = bot.reply_to(message, "Qidirilmoqda... 🔎")
-        tracks = api.search_tracks(query)
+        tracks = api.search(query)
         
         if tracks:
             track = tracks[0]
