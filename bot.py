@@ -1,4 +1,4 @@
- import telebot
+import telebot
 from telebot import types
 
 # 🔑 Bot tokeningiz
@@ -37,5 +37,3 @@ def query_text(inline_query):
             {"n": 2, "title": "⚔️ ᴅᴜᴇʟ (1ᴠs1)", "desc": "Premium darajadagi jang"},
             {"n": 3, "title": "🔱 ᴛʀɪᴏ (3 ᴋɪsʜɪ)", "desc": "Uchta titan jangi"},
             {"n": 4, "title": "🍀 sǫᴜᴀᴅ (4 ᴋɪ
-       
-        
