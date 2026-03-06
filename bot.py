@@ -6,35 +6,42 @@ from pytgcalls.types import AudioPiped
 from yt_dlp import YoutubeDL
 from youtubesearchpython import VideosSearch
 
-# Ma'lumotlar (Bular o'zgarmaydi)
+# Ma'lumotlar
 API_ID = 33498259
 API_HASH = "bd2c7b99af0de4fe7843ab1e8f292fd2"
 BOT_TOKEN = "8681347213:AAHpYFfclpZips9HdI0_WGacOoarFzZmDLY"
 
-app = Client("music_bot", API_ID, API_HASH, bot_token=BOT_TOKEN)
+app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 call_py = PyTgCalls(app)
 
 @app.on_message(filters.command("play"))
 async def play(_, message):
     if len(message.command) < 2:
         return await message.reply("Qo'shiq nomini yozing!")
-
+    
     m = await message.reply("🔎 Qidiryapman...")
     query = " ".join(message.command[1:])
     
     try:
         search = VideosSearch(query, limit=1).result()['result'][0]
-        with YoutubeDL({"format": "bestaudio/best", "quiet": True}) as ydl:
-            url = ydl.extract_info(search['link'], download=False)['url']
+        ydl_opts = {"format": "bestaudio/best", "quiet": True, "noplaylist": True}
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(search['link'], download=False)
+            url = info['url']
 
-        await call_py.join_group_call(message.chat.id, AudioPiped(url))
-        await m.edit(f"✅ Ijro etilmoqda: {search['title']}")
+        await call_py.join_group_call(
+            message.chat.id,
+            AudioPiped(url)
+        )
+        await m.edit(f"✅ Ijro etilmoqda: **{search['title']}**")
     except Exception as e:
         await m.edit(f"Xato: {e}")
 
 async def start_bot():
     await app.start()
     await call_py.start()
+    print("Bot muvaffaqiyatli yoqildi!")
     await asyncio.Event().wait()
 
-asyncio.run(start_bot())
+if __name__ == "__main__":
+    asyncio.get_event_loop().run_until_complete(start_bot())
