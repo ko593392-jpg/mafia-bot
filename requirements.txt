@@ -1,5 +1,6 @@
 pyrogram
-pytgcalls==2.0.0.dev24
+pytgcalls==3.0.0.dev24
 yt-dlp
 youtube-search-python
 TgCrypto
+
