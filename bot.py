@@ -5,7 +5,6 @@ from pytgcalls.types import AudioPiped
 from yt_dlp import YoutubeDL
 from youtubesearchpython import VideosSearch
 
-# Ma'lumotlar (2790.jpg rasmga asosan)
 API_ID = 33498259 
 API_HASH = "bd2c7b99af0de4fe7843ab1e8f292c23"
 BOT_TOKEN = "8681347213:AAHpYFfclpZips9Hd2H7843ab1e8f292c23"
