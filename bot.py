@@ -1,4 +1,3 @@
-import os
 import asyncio
 from pyrogram import Client, filters
 from pytgcalls import PyTgCalls
@@ -12,6 +11,7 @@ API_HASH = "bd2c7b99af0de4fe7843ab1e8f292fd2"
 BOT_TOKEN = "8681347213:AAHpYFfclpZips9HdI0_WGacOoarFzZmDLY"
 
 app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Yangi versiyada PyTgCalls(app) shunday ulanadi
 call_py = PyTgCalls(app)
 
 @app.on_message(filters.command("play"))
@@ -40,7 +40,7 @@ async def play(_, message):
 async def start_bot():
     await app.start()
     await call_py.start()
-    print("Bot muvaffaqiyatli yoqildi!")
+    print("Bot ishladi!")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
