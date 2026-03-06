@@ -5,7 +5,7 @@ from pytgcalls.types import AudioPiped
 from yt_dlp import YoutubeDL
 from youtubesearchpython import VideosSearch
 
-# Sizning ma'lumotlaringiz
+# Ma'lumotlar
 API_ID = 33498259
 API_HASH = "bd2c7b99af0de4fe7843ab1e8f292fd2"
 BOT_TOKEN = "8681347213:AAHpYFfclpZips9HdI0_WGacOoarFzZmDLY"
@@ -28,7 +28,8 @@ async def play(_, message):
             info = ydl.extract_info(search['link'], download=False)
             url = info['url']
 
-        await call_py.join_group_call(
+        # Ovozli chatga ulanish
+        await call_py.play(
             message.chat.id,
             AudioPiped(url)
         )
@@ -39,7 +40,7 @@ async def play(_, message):
 async def start_bot():
     await app.start()
     await call_py.start()
-    print("🚀 Bot muvaffaqiyatli ishga tushdi!")
+    print("🚀 Bot ishga tushdi!")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
