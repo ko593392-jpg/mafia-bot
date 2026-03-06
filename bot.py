@@ -28,7 +28,7 @@ async def play(_, message):
             info = ydl.extract_info(search['link'], download=False)
             url = info['url']
 
-        # Ovozli chatga ulanish
+        # Yangi versiyada audio o'ynatish
         await call_py.play(
             message.chat.id,
             AudioPiped(url)
@@ -40,8 +40,9 @@ async def play(_, message):
 async def start_bot():
     await app.start()
     await call_py.start()
-    print("🚀 Bot ishga tushdi!")
-    await asyncio.Event().wait()
+    print("🚀 Bot muvaffaqiyatli ishga tushdi!")
+    # Railway'da bot o'chib qolmasligi uchun kutish holati
+    await asyncio.Future()
 
 if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(start_bot())
