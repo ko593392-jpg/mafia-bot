@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeta Calc - Shodiya & Dilnoza</title>
+    <style>
+        body { 
+            background: #000; 
+            color: #0f0; 
+            font-family: 'Courier New', monospace; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .calc { 
+            position: relative;
+            border: 3px solid #0f0; 
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+            background: #050505;
+            overflow: hidden;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-size: 20px;
+            font-weight: bold;
+            color: rgba(0, 255, 100, 0.1); 
+            white-space: nowrap;
+            z-index: 0;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        input { 
+            width: 220px; 
+            height: 55px; 
+            background: rgba(0, 20, 0, 0.9); 
+            border: 1px solid #0f0; 
+            color: #0f0; 
+            font-size: 26px; 
+            text-align: right; 
+            margin-bottom: 20px; 
+            padding: 10px; 
+            position: relative;
+            z-index: 1;
+            box-shadow: inset 0 0 8px #0f0;
+        }
+
+        .btns { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 12px; 
+            position: relative;
+            z-index: 1;
+        }
+        
+        button { 
+            width: 55px; 
+            height: 55px; 
+            background: rgba(0, 0, 0, 0.9); 
+            border: 1px solid #0f0; 
+            color: #0f0; 
+            font-weight: bold;
+            cursor: pointer; 
+            border-radius: 12px;
+            transition: 0.2s;
+        }
+
+        button:active { 
+            background: #0f0; 
+            color: #000; 
+            box-shadow: 0 0 15px #0f0;
+        }
+
+        .dev-info {
+            margin-top: 25px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 8px #0f0;
+            color: #0f0;
+            border-top: 1px solid rgba(0, 255, 0, 0.3);
+            padding-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calc">
+        <div class="watermark">
+            KARIMJANOVA SHODIYA <br>
+            BAZARTAYEVA DILNOZA
+        </div>
+
+        <input type="text" id="display" readonly value="" placeholder="0">
+        
+        <div class="btns">
+            <button onclick="v('7')">7</button><button onclick="v('8')">8</button><button onclick="v('9')">9</button><button onclick="v('/')">/</button>
+            <button onclick="v('4')">4</button><button onclick="v('5')">5</button><button onclick="v('6')">6</button><button onclick="v('*')">*</button>
+            <button onclick="v('1')">1</button><button onclick="v('2')">2</button><button onclick="v('3')">3</button><button onclick="v('-')">-</button>
+            <button onclick="c()">C</button><button onclick="v('0')">0</button><button onclick="e()">=</button><button onclick="v('+')">+</button>
+        </div>
+    </div>
+
+    <div class="dev-info">
+        Developed by <br>
+        Karimjanova Shodiyabonu and Bazartayeva Dilnoza
+    </div>
+
+    <script>
+        const d = document.getElementById('display');
+        function v(x) { d.value += x; }
+        function c() { d.value = ''; }
+        function e() { 
+            try { 
+                if(d.value === "") return;
+                let res = eval(d.value);
+                d.value = Number.isInteger(res) ? res : res.toFixed(2);
+            } 
+            catch { d.value = 'Error'; setTimeout(c, 1000); } 
+        }
+    </script>
+</body>
+</html>
